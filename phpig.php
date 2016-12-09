@@ -1,10 +1,11 @@
 <?php
 
 // log error to a specific file
+ini_set("error_reporting", 'E_ALL');
 ini_set("log_errors", 1);
 ini_set("error_log", "/tmp/php-error.log");
 
-
+register_shutdown_function('shutdown');
 
 //error_log( "phpig///////////////////");
 $pp_server = $_SERVER['SERVER_NAME'];
@@ -16,6 +17,7 @@ $pp_docroot = $_SERVER['DOCUMENT_ROOT'];
 // restrict working directory PER SITE
 error_log("DOCROOT: " . $pp_docroot);
 ini_set("open_basedir", $pp_docroot);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // is enabled?
@@ -46,8 +48,8 @@ error_log("phpig: REQUEST RECEIVED: SERVER: " . $pp_server . " FILE: " . $_SERVE
 //    /* Non-protected ini settings may set normally */
 //    $sandbox->ini_set('html_errors',false);
 
-    runkit_function_rename('include','include_ori');
-    runkit_function_rename('include_mod','include');
+//    runkit_function_rename('include','include_ori');
+//    runkit_function_rename('include_mod','include');
 
     runkit_function_rename('mysqli_query','mysqli_query_ori');
     runkit_function_rename('mysqli_query_mod','mysqli_query');
@@ -71,16 +73,16 @@ function mysqli_query_mod($con, $query) {
     //return false;
 }
 
-function ini_set_mod() {
+function ini_set_mod($a, $b) {
     //die;
-    error_log("phpig: SERVER: " . $GLOBALS["$pp_server"] . " POLICY VIOLATION: trying to change error reporting mode");
-
-    return false;
+    //error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " POLICY VIOLATION: trying to change error reporting mode");
+    error_log("ini_set(" . $a .", " . $b . ")");
+    return ini_set_ori($a, $b);
 }
 
 function include_mod($file) {
     //die;
-    error_log("phpig: SERVER: " . $GLOBALS["$pp_server"] . " NOTIFICATION: included file: " . $file);
+    error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " NOTIFICATION: included file: " . $file);
 
     return include_ori($file);
 }
@@ -102,11 +104,30 @@ function fopen_mod($file, $mod) {
     // check if violation occurs
     if ($pp_violation) {
         // corrective action
-        error_log("phpig: SERVER: " . $GLOBALS["$pp_server"] . ": POLICY VIOLATION: trying to fopen in write mode .php file: " . $file);
+        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . ": POLICY VIOLATION: trying to fopen in write mode .php file: " . $file);
         die;
     } else {
         return fopen_ori($file, $mod);
     }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// common functions
+///////////////////////////////////////////////////////////////////////////
+
+function shutdown() {
+    //error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " NOTIFICATION: shutting down");
+//    if ($_SERVER['SERVER_NAME'] == "muricciaglia.com") {
+//        error_log("////////////////////////////////////////////");
+//        $included_files = get_included_files();
+//
+//        foreach ($included_files as $filename) {
+//            error_log("INCLUDED:" . $filename);
+//        }
+//        error_log("////////////////////////////////////////////");
+//
+//    }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////
