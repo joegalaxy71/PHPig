@@ -14,8 +14,8 @@ $pp_docroot = $_SERVER['DOCUMENT_ROOT'];
 //print_r($_SERVER);
 //error_log(ini_get("open_basedir"));
 
-// restrict working directory PER SITE
-error_log("DOCROOT: " . $pp_docroot);
+// restrict working directory PER SITE --- ALWAYS
+//error_log("DOCROOT: " . $pp_docroot);
 ini_set("open_basedir", $pp_docroot);
 
 
@@ -104,7 +104,7 @@ function fopen_mod($file, $mod) {
         $pp_violation = false;
     }
 
-    // check if violation occurs
+    // error log&die or normal function call
     if ($pp_violation) {
         // corrective action
         error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . ": POLICY VIOLATION: trying to fopen in write mode .php file: " . $file);
