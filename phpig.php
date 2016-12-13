@@ -25,7 +25,7 @@ ini_set("open_basedir", $pp_docroot);
 
 if (file_exists($pp_docroot."/.phpig")) {
 
-error_log("phpig: REQUEST RECEIVED: SERVER: " . $pp_server . " FILE: " . $_SERVER['PHP_SELF'] . " IP: " . $_SERVER['REMOTE_ADDR']);
+    error_log("phpig: REQUEST RECEIVED: SERVER: " . $pp_server . " FILE: " . $_SERVER['PHP_SELF'] . " IP: " . $_SERVER['REMOTE_ADDR']);
 
 
     // let's remove some nasty functions
@@ -60,6 +60,9 @@ error_log("phpig: REQUEST RECEIVED: SERVER: " . $pp_server . " FILE: " . $_SERVE
 
     runkit_function_rename('fopen','fopen_ori');
     runkit_function_rename('fopen_mod','fopen');
+} else {
+    error_log("phpig: PHPIG DISABLED FOR: " . $pp_server);
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -76,7 +79,7 @@ function mysqli_query_mod($con, $query) {
 function ini_set_mod($a, $b) {
     //die;
     //error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " POLICY VIOLATION: trying to change error reporting mode");
-    error_log("ini_set(" . $a .", " . $b . ")");
+    //error_log("ini_set(" . $a .", " . $b . ")");
     return ini_set_ori($a, $b);
 }
 
@@ -135,9 +138,8 @@ function shutdown() {
 ///////////////////////////////////////////////////////////////////////////
 
 function endsWith($haystack, $needle, $case=true) {
-    if($case)
-    {
-        return (strcmp(substr($haystack, strlen($haystack) - strlen($needle)),$needle)===0);}
-        return (strcasecmp(substr($haystack, strlen($haystack) - strlen($needle)),$needle)===0);
-	}
+    if ($case) {
+        return (strcmp(substr($haystack, strlen($haystack) - strlen($needle)), $needle) === 0);
+    }
+}
 ?>
