@@ -23,9 +23,9 @@ ini_set("open_basedir", $pp_docroot);
 // is enabled?
 /////////////////////////////////////////////////////////////////////////////
 
-if (file_exists($pp_docroot."/.phpig")) {
+if ( file_exists($pp_docroot."/.phpig") && !isset($_COOKIE["phpig"]) ) {
 
-    error_log("phpig: REQUEST RECEIVED: SERVER: " . $pp_server . " FILE: " . $_SERVER['PHP_SELF'] . " IP: " . $_SERVER['REMOTE_ADDR']);
+    error_log("PHPIG: enabled | SERVER: " . $pp_server . " | FILE: " . $_SERVER['PHP_SELF'] . " | IP: " . $_SERVER['REMOTE_ADDR']);
 
 
     // let's remove some nasty functions
@@ -57,12 +57,20 @@ if (file_exists($pp_docroot."/.phpig")) {
     runkit_function_rename('ini_set','ini_set_ori');
     runkit_function_rename('ini_set_mod','ini_set');
 
+    runkit_function_rename('file_put_contents','file_put_contents_ori');
+    runkit_function_rename('file_put_contents_mod','file_put_contents');
 
     runkit_function_rename('fopen','fopen_ori');
     runkit_function_rename('fopen_mod','fopen');
 } else {
-    error_log("phpig: PHPIG DISABLED FOR: " . $pp_server);
+    if (!file_exists($pp_docroot."/.phpig")) {
+        $reason = ".phpig missing on site root";
+    }
+    if (isset($_COOKIE["phpig"])) {
+        $reason = "phpig cookie present";
+    }
 
+    error_log("PHPIG: disabled, " . $reason . " | SERVER: " . $pp_server . " | FILE: " . $_SERVER['PHP_SELF'] . " | IP: " . $_SERVER['REMOTE_ADDR']);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -111,6 +119,26 @@ function fopen_mod($file, $mod) {
         die;
     } else {
         return fopen_ori($file, $mod);
+    }
+}
+
+function file_put_contents_mod($file, $data, $flags, $content) {
+    //init
+    $pp_violation = false;
+
+
+    // violation checks
+    if (endsWith($file, ".php")) {
+        $pp_violation = true;
+    }
+
+    // error log&die or normal function call
+    if ($pp_violation) {
+        // corrective action
+        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . ": POLICY VIOLATION: trying to file_put_contents in write mode .php file: " . $file);
+        die;
+    } else {
+        return file_put_contents_ori($file, $data, $flags, $content);
     }
 }
 
