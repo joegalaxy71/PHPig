@@ -76,7 +76,6 @@ if ( !file_exists($pp_docroot."/.phpig-disable") && !isset($_COOKIE["phpig"]) ) 
 
     error_log("PHPIG: disabled, " . $reason . " | SERVER: " . $pp_server . " | FILE: " . $_SERVER['PHP_SELF'] . " | IP: " . $_SERVER['REMOTE_ADDR']);
 }
-
 /////////////////////////////////////////////////////////////////////////////
 // modified functions (ends in _mod)
 /////////////////////////////////////////////////////////////////////////////
