@@ -7,6 +7,16 @@ ini_set("error_log", "/tmp/php-error.log");
 
 register_shutdown_function('shutdown');
 
+//includes --- spyc for yaml parsing
+require_once "spyc.php";
+
+// if .phpig file exists, read it, parse it, merge the array with the one of the config
+if (file_exists($pp_docroot . "/.phpig")) {
+    error_log("wow");
+    $config = Spyc::YAMLLoad($pp_docroot . "/.phpig");
+    error_log(print_r($config));
+}
+
 //error_log( "phpig///////////////////");
 $pp_server = $_SERVER['SERVER_NAME'];
 $pp_docroot = $_SERVER['DOCUMENT_ROOT'];
@@ -23,7 +33,7 @@ ini_set("open_basedir", $pp_docroot);
 // is enabled?
 /////////////////////////////////////////////////////////////////////////////
 
-if ( !file_exists($pp_docroot."/.phpig-disable") && !isset($_COOKIE["phpig"]) ) {
+if ( !file_exists($pp_docroot . "/.phpig-disable") && !isset($_COOKIE["phpig"]) ) {
 
     error_log("PHPIG: enabled | SERVER: " . $pp_server . " | FILE: " . $_SERVER['PHP_SELF'] . " | IP: " . $_SERVER['REMOTE_ADDR']);
 
