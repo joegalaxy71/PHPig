@@ -25,13 +25,16 @@ $config = Spyc::YAMLLoad("/var/www/phpig/.phpig-defaults");
 if (file_exists($pp_docroot . "/.phpig")) {
     
     $user_config = Spyc::YAMLLoad($pp_docroot . "/.phpig");
-    //error_log("user config: " . print_r($user_config, true));
+    error_log("user config: " . print_r($user_config, true));
 
-    array_replace_recursive($config, $user_config);
+    $config = array_replace_recursive($config, $user_config);
 }
 
-//error_log("config: " . print_r($config, true));
-
+// conditional logging
+//if ($pp_server == "www.avero.it") {
+//    error_log("config: " . print_r($config, true));
+////    error_log("Enabled = " . $config["enabled"]);
+//}
 
 //print_r($_SERVER);
 //error_log(ini_get("open_basedir"));
@@ -45,18 +48,15 @@ ini_set("open_basedir", $pp_docroot);
 // is enabled?
 /////////////////////////////////////////////////////////////////////////////
 
-if ( !file_exists($pp_docroot . "/.phpig-disable") && !isset($_COOKIE["phpig"]) ) {
+if ( ($config["enabled"]) && !isset($_COOKIE["phpig"]) ) {
 
     error_log("PHPIG 0.3: enabled | SERVER: " . $pp_server . " | FILE: " . $_SERVER['PHP_SELF'] . " | IP: " . $_SERVER['REMOTE_ADDR']);
-
 
     // let's remove some nasty functions
     runkit_function_remove("exec");
     runkit_function_remove("shell_exec");
     runkit_function_remove("passthru");
     runkit_function_remove("system");
-
-
 
 //    ini_set("open_basedir", $pp_docroot);
 
@@ -82,8 +82,8 @@ if ( !file_exists($pp_docroot . "/.phpig-disable") && !isset($_COOKIE["phpig"]) 
     runkit_function_rename('file_put_contents','file_put_contents_ori');
     runkit_function_rename('file_put_contents_mod','file_put_contents');
 
-    runkit_function_rename('unlink','unlink_ori');
-    runkit_function_rename('unlink_mod','unlink');
+//    runkit_function_rename('unlink','unlink_ori');
+//    runkit_function_rename('unlink_mod','unlink');
 
     runkit_function_rename('fopen','fopen_ori');
     runkit_function_rename('fopen_mod','fopen');
@@ -92,8 +92,8 @@ if ( !file_exists($pp_docroot . "/.phpig-disable") && !isset($_COOKIE["phpig"]) 
     runkit_function_rename('touch_mod','touch');
 
 } else {
-    if (file_exists($pp_docroot."/.phpig-disabled")) {
-        $reason = ".phpig-disabled present on site root";
+    if ($config["enabled"] == false) {
+        $reason = " by resulting active configuration";
     }
     if (isset($_COOKIE["phpig"])) {
         $reason = "phpig cookie present";
@@ -149,7 +149,6 @@ function unlink_mod($file, $context) {
 function fopen_mod($file, $mod) {
     //init
     $pp_violation = false;
-
 
     // violation checks
     if (endsWith($file, ".php") && ($mod != "r")) {
