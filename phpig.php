@@ -20,12 +20,11 @@ $config = Spyc::YAMLLoad("/var/www/phpig/.phpig-defaults");
 
 //error_log("config: " . print_r($config, true));
 
-
 // if .phpig file exists, read it, parse it, merge the array with the one of the config
 if (file_exists($pp_docroot . "/.phpig")) {
     
     $user_config = Spyc::YAMLLoad($pp_docroot . "/.phpig");
-    error_log("user config: " . print_r($user_config, true));
+    //error_log("user config: " . print_r($user_config, true));
 
     $config = array_replace_recursive($config, $user_config);
 }
