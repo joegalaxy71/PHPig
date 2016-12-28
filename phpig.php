@@ -23,6 +23,7 @@ if (is_writable("/var/www/phpig/phpig-default.conf")) {
 $config = Spyc::YAMLLoad("/var/www/phpig/phpig-default.conf");
 
 //error_log("config: " . print_r($config, true));
+//error_log($config['locked files']['extensions']);
 
 // if .phpig file exists, read it, parse it, merge the array with the one of the config
 if (file_exists($pp_docroot . "/phpig.conf")) {
@@ -155,13 +156,28 @@ function unlink_mod($file, $context) {
 
 function fopen_mod($file, $mod) {
     //init
+
+    global $config;
+
     $pp_violation = false;
 
     // violation checks
+
+    // not a .php file
     if (endsWith($file, ".php") && ($mod != "r")) {
         $pp_violation = true;
     }
 
+    // not a file with a forbidden extension
+    $file_parts = pathinfo($file);
+    $extension = $file_parts['extension'];
+    $pos = strpos($config['locked files']['extensions'], $extension);
+//    error_log("pos:$pos");
+    if ( ($pos !== false) && ($mod != "r") ) {
+        $pp_violation = true;
+    }
+
+    // allow this (waiting to implement sanitized dirs)
     if (strpos($file, "cache/Gantry")) {
         $pp_violation = false;
     }
@@ -169,7 +185,7 @@ function fopen_mod($file, $mod) {
     // error log&die or normal function call
     if ($pp_violation) {
         // corrective action
-        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | FILE: " . $_SERVER['PHP_SELF'] .  " | IP: " . $_SERVER['REMOTE_ADDR'] . ": POLICY VIOLATION: trying to fopen in write mode .php file: " . $file);
+        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | FILE: " . $_SERVER['PHP_SELF'] .  " | IP: " . $_SERVER['REMOTE_ADDR'] . ": POLICY VIOLATION: trying to fopen in write mode ." . $extension . " file: " . $file);
         die;
     } else {
         return fopen_ori($file, $mod);
@@ -178,18 +194,31 @@ function fopen_mod($file, $mod) {
 
 function file_put_contents_mod($file, $data, $flags, $content) {
     //init
+
+    global $config;
+
     $pp_violation = false;
 
-
     // violation checks
+
+    // not a .php file in write mode
     if (endsWith($file, ".php")) {
+        $pp_violation = true;
+    }
+
+    // not a file with a forbidden extension in write mode
+    $file_parts = pathinfo($file);
+    $extension = $file_parts['extension'];
+    $pos = strpos($config['locked files']['extensions'], $extension);
+//    error_log("pos:$pos");
+    if ( ($pos !== false) && ($mod != "r") ) {
         $pp_violation = true;
     }
 
     // error log&die or normal function call
     if ($pp_violation) {
         // corrective action
-        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | FILE: " . $_SERVER['PHP_SELF'] .  " | IP: " . $_SERVER['REMOTE_ADDR'] . ": POLICY VIOLATION: trying to file_put_contents .php file: " . $file);
+        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | FILE: " . $_SERVER['PHP_SELF'] .  " | IP: " . $_SERVER['REMOTE_ADDR'] . ": POLICY VIOLATION: trying to file_put_contents " . $extension . " file: " . $file);
         die;
     } else {
         return file_put_contents_ori($file, $data, $flags, $content);
