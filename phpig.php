@@ -15,15 +15,23 @@ $pp_docroot = $_SERVER['DOCUMENT_ROOT'];
 
 //error_log($pp_docroot . "/.phpig");
 
+if (is_writable("/var/www/phpig/phpig-default.conf")) {
+    error_log('WARNING: /var/www/phpig/phpig-default.conf is writable');
+}
+
 // loading main config
-$config = Spyc::YAMLLoad("/var/www/phpig/.phpig-defaults");
+$config = Spyc::YAMLLoad("/var/www/phpig/phpig-default.conf");
 
 //error_log("config: " . print_r($config, true));
 
 // if .phpig file exists, read it, parse it, merge the array with the one of the config
-if (file_exists($pp_docroot . "/.phpig")) {
+if (file_exists($pp_docroot . "/phpig.conf")) {
+
+    if (is_writable($pp_docroot . "/phpig.conf")) {
+        error_log("WARNING: " . $pp_docroot . "/phpig.conf is writable");
+    }
     
-    $user_config = Spyc::YAMLLoad($pp_docroot . "/.phpig");
+    $user_config = Spyc::YAMLLoad($pp_docroot . "/phpig.conf");
     //error_log("user config: " . print_r($user_config, true));
 
     $config = array_replace_recursive($config, $user_config);
@@ -53,7 +61,7 @@ if ( ($config["enabled"]) && !isset($_COOKIE["phpig"]) ) {
 
     // let's remove some nasty functions
     runkit_function_remove("exec");
-    runkit_function_remove("shell_exec");
+    runkit_function_remove("shell_exec"); //also disable backtick operator `
     runkit_function_remove("passthru");
     runkit_function_remove("system");
 
