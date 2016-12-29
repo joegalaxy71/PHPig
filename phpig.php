@@ -39,10 +39,10 @@ if (file_exists($pp_docroot . "/phpig.conf")) {
 }
 
 // conditional logging
-//if ($pp_server == "www.avero.it") {
-//    error_log("config: " . print_r($config, true));
-////    error_log("Enabled = " . $config["enabled"]);
-//}
+if ($pp_server == "www.avero.it") {
+    error_log("config: " . print_r($config, true));
+    error_log("Enabled = " . $config["locked"]["files"]["extensions"]);
+}
 
 //print_r($_SERVER);
 //error_log(ini_get("open_basedir"));
@@ -171,7 +171,7 @@ function fopen_mod($file, $mod) {
     // not a file with a forbidden extension
     $file_parts = pathinfo($file);
     $extension = $file_parts['extension'];
-    $pos = strpos($config['locked files']['extensions'], $extension);
+    $pos = strpos($config["locked"]["files"]["extensions"], $extension);
 //    error_log("pos:$pos");
     if ( ($pos !== false) && ($mod != "r") ) {
         $pp_violation = true;
@@ -209,7 +209,7 @@ function file_put_contents_mod($file, $data, $flags, $content) {
     // not a file with a forbidden extension in write mode
     $file_parts = pathinfo($file);
     $extension = $file_parts['extension'];
-    $pos = strpos($config['locked files']['extensions'], $extension);
+    $pos = strpos($config["locked"]["files"]["extensions"], $extension);
 //    error_log("pos:$pos");
     if ( ($pos !== false) && ($mod != "r") ) {
         $pp_violation = true;
