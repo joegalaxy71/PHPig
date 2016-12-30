@@ -39,10 +39,10 @@ if (file_exists($pp_docroot . "/phpig.conf")) {
 }
 
 // conditional logging
-if ($pp_server == "www.avero.it") {
-    error_log("config: " . print_r($config, true));
-    error_log("Enabled = " . $config["locked"]["files"]["extensions"]);
-}
+//if ($pp_server == "movisol.org") {
+//    error_log("config: " . print_r($config, true));
+//    error_log("Enabled = " . $config["locked"]["files"]["extensions"]);
+//}
 
 //print_r($_SERVER);
 //error_log(ini_get("open_basedir"));
@@ -66,20 +66,8 @@ if ( ($config["enabled"]) && !isset($_COOKIE["phpig"]) ) {
     runkit_function_remove("passthru");
     runkit_function_remove("system");
 
-//    ini_set("open_basedir", $pp_docroot);
-
-//    $options = array(
-//        'safe_mode'=>true,
-//        'open_basedir'=>$pp_docroot,
-//        'allow_url_fopen'=>'false',
-//        'disable_functions'=>'exec,shell_exec,passthru,system');
-//        //'disable_classes'=>'myAppClass');
-//    $sandbox = new Runkit_Sandbox($options);
-//    /* Non-protected ini settings may set normally */
-//    $sandbox->ini_set('html_errors',false);
-
-//    runkit_function_rename('include','include_ori');
-//    runkit_function_rename('include_mod','include');
+    runkit_function_rename('include','include_ori');
+    runkit_function_rename('include_mod','include');
 
     runkit_function_rename('mysqli_query','mysqli_query_ori');
     runkit_function_rename('mysqli_query_mod','mysqli_query');
@@ -122,9 +110,10 @@ function mysqli_query_mod($con, $query) {
 
 function ini_set_mod($a, $b) {
     //die;
-    //error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " POLICY VIOLATION: trying to change error reporting mode");
-    //error_log("ini_set(" . $a .", " . $b . ")");
-    return ini_set_ori($a, $b);
+//    error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " POLICY VIOLATION: trying to change error reporting mode");
+//    error_log("ini_set(" . $a .", " . $b . ")");
+//    return ini_set_ori($a, $b);
+    return false;
 }
 
 function include_mod($file) {
@@ -157,6 +146,10 @@ function unlink_mod($file, $context) {
 function fopen_mod($file, $mod) {
     //init
 
+//    error_log("--- working on file:$file");
+//    $backtrace = debug_backtrace();
+//    error_log("fopen called from:" .  $backtrace[1]['file']);
+
     global $config;
 
     $pp_violation = false;
@@ -169,13 +162,13 @@ function fopen_mod($file, $mod) {
     }
 
     // not a file with a forbidden extension
-    $file_parts = pathinfo($file);
-    $extension = $file_parts['extension'];
-    $pos = strpos($config["locked"]["files"]["extensions"], $extension);
+//    $file_parts = pathinfo($file);
+//    $extension = $file_parts['extension'];
+//    $pos = strpos($config["locked"]["files"]["extensions"], $extension);
 //    error_log("pos:$pos");
-    if ( ($pos !== false) && ($mod != "r") ) {
-        $pp_violation = true;
-    }
+//    if ( ($pos !== false) && ($mod != "r") ) {
+//        $pp_violation = true;
+//    }
 
     // allow this (waiting to implement sanitized dirs)
     if (strpos($file, "cache/Gantry")) {
