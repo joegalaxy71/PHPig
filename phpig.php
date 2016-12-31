@@ -39,16 +39,13 @@ if (file_exists($pp_docroot . "/phpig.conf")) {
 }
 
 // conditional logging
-//if ($pp_server == "movisol.org") {
-//    error_log("config: " . print_r($config, true));
-//    error_log("Enabled = " . $config["locked"]["files"]["extensions"]);
-//}
-
-//print_r($_SERVER);
-//error_log(ini_get("open_basedir"));
+if ($pp_server == "www.centroascoltopsicologico.com") {
+//if (true) {
+    error_log("config: " . print_r($config, true));
+    error_log("Enabled = " . $config["locked"]["files"]["extensions"]);
+}
 
 // restrict working directory PER SITE --- ALWAYS
-//error_log("DOCROOT: " . $pp_docroot);
 ini_set("open_basedir", $pp_docroot);
 
 
@@ -194,7 +191,7 @@ function file_put_contents_mod($file, $data, $flags, $content) {
 
     // violation checks
 
-    // not a .php file in write mode
+    // not a .php file
     if (endsWith($file, ".php")) {
         $pp_violation = true;
     }
