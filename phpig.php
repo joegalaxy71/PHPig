@@ -42,7 +42,7 @@ if (file_exists($pp_docroot . "/phpig.conf")) {
 if ($pp_server == "www.centroascoltopsicologico.com") {
 //if (true) {
     error_log("config: " . print_r($config, true));
-    error_log("Enabled = " . $config["locked"]["files"]["extensions"]);
+    error_log("Enabled = " . $config["enabled"]);
 }
 
 // restrict working directory PER SITE --- ALWAYS
@@ -75,8 +75,8 @@ if ( ($config["enabled"]) && !isset($_COOKIE["phpig"]) ) {
     runkit_function_rename('file_put_contents','file_put_contents_ori');
     runkit_function_rename('file_put_contents_mod','file_put_contents');
 
-//    runkit_function_rename('unlink','unlink_ori');
-//    runkit_function_rename('unlink_mod','unlink');
+    runkit_function_rename('unlink','unlink_ori');
+    runkit_function_rename('unlink_mod','unlink');
 
     runkit_function_rename('fopen','fopen_ori');
     runkit_function_rename('fopen_mod','fopen');
@@ -109,8 +109,8 @@ function ini_set_mod($a, $b) {
     //die;
 //    error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " POLICY VIOLATION: trying to change error reporting mode");
 //    error_log("ini_set(" . $a .", " . $b . ")");
-//    return ini_set_ori($a, $b);
-    return false;
+    return ini_set_ori($a, $b);
+//    return false;
 }
 
 function include_mod($file) {
@@ -121,31 +121,44 @@ function include_mod($file) {
 }
 
 function unlink_mod($file, $context) {
-    //init
-    $pp_violation = false;
 
 
-    // violation checks
-    if (endsWith($file, ".php")) {
-        $pp_violation = true;
-    }
+//    error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | NOTIFICATION: unlinking: " . $file);
 
-    // error log&die or normal function call
-    if ($pp_violation) {
-        // corrective action
-        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | FILE: " . $_SERVER['PHP_SELF'] .  " | IP: " . $_SERVER['REMOTE_ADDR'] . ": POLICY VIOLATION: trying to unlink .php file: " . $file);
-        die;
-    } else {
+//    //init
+//    $pp_violation = false;
+//
+//    // violation checks
+//    if (endsWith($file, ".php")) {
+//        $pp_violation = true;
+//    }
+//
+//    // error log&die or normal function call
+//    if ($pp_violation) {
+//        // corrective action
+//        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | FILE: " . $_SERVER['PHP_SELF'] .  " | IP: " . $_SERVER['REMOTE_ADDR'] . ": POLICY VIOLATION: trying to unlink .php file: " . $file);
+//        die;
+//    } else {
         return unlink_ori($file, $context);
-    }
+//    }
 }
 
 function fopen_mod($file, $mod) {
     //init
 
 //    error_log("--- working on file:$file");
-//    $backtrace = debug_backtrace();
+    $backtrace = debug_backtrace();
 //    error_log("fopen called from:" .  $backtrace[1]['file']);
+
+//    $out1 = `getattr`;
+//    error_log("testing getattr, output is=$out1");
+
+    if ($mod != "r") {
+        if (strpos($file, "/var/www/movisol.org/wp-includes")) {
+            error_log("file:$file, written by: $backtrace[1]['file']");
+        }
+    }
+
 
     global $config;
 
@@ -159,8 +172,8 @@ function fopen_mod($file, $mod) {
     }
 
     // not a file with a forbidden extension
-//    $file_parts = pathinfo($file);
-//    $extension = $file_parts['extension'];
+    $file_parts = pathinfo($file);
+    $extension = $file_parts['extension'];
 //    $pos = strpos($config["locked"]["files"]["extensions"], $extension);
 //    error_log("pos:$pos");
 //    if ( ($pos !== false) && ($mod != "r") ) {
@@ -184,6 +197,12 @@ function fopen_mod($file, $mod) {
 
 function file_put_contents_mod($file, $data, $flags, $content) {
     //init
+
+    $backtrace = debug_backtrace();
+
+    if (strpos($file, "/var/www/movisol.org/wp-includes/e5b84a541ba41780fc744d6cf7e1a869")) {
+        error_log("file:$file, written by: $backtrace[1]['file']");
+    }
 
     global $config;
 
