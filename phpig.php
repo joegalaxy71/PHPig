@@ -388,3 +388,7 @@ function of() {
 function stripNull($string) {
     return str_replace("\0", "", $string);
 }
+
+function my_void() {
+    return false;
+}
