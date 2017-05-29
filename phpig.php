@@ -2,9 +2,10 @@
 
 $time_start = microtime(true);
 // log error to a specific file
+// need to implement logfile as a param
 restore_logs();
 
-// take care of whutdown, too
+// take care of shutdown, too
 register_shutdown_function('shutdown');
 
 //includes --- spyc for yaml parsing
@@ -38,16 +39,13 @@ if (file_exists($pp_docroot . "/phpig.conf")) {
     $config = array_replace_recursive($config, $user_config);
 }
 
-// conditional logging
-if ($pp_server == "www.centroascoltopsicologico.com") {
-//if (true) {
-    error_log("config: " . print_r($config, true));
-    error_log("Enabled = " . $config["enabled"]);
-}
-
 // restrict working directory PER SITE --- ALWAYS
 ini_set("open_basedir", $pp_docroot);
 
+if ( $_SERVER['REQUEST_URI'] == "/xmlrpc.php" ) {
+    //error_log("PHPIG 0.3: xmlrpc script kiddies");
+    die();
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // is enabled?
@@ -55,13 +53,24 @@ ini_set("open_basedir", $pp_docroot);
 
 if ( ($config["enabled"]) && !isset($_COOKIE["phpig"]) ) {
 
-    error_log("PHPIG 0.3: enabled | SERVER: " . $pp_server . " | FILE: " . $_SERVER['PHP_SELF'] . " | IP: " . $_SERVER['REMOTE_ADDR']);
+    error_log("PHPIG 0.3: enabled | SERVER: " . $pp_server . " | FILE: " . $_SERVER['PHP_SELF'] . " | URI: " . $_SERVER['REQUEST_URI'] . " | IP: " . $_SERVER['REMOTE_ADDR']);
+
+    // further hardening by ini_set
+
+    //    ini_set("allow_url_fopen", "Off");
+    //    ini_set("allow_url_include", "Off");
+    //    ini_set("register_globals", "Off");
+    //    ini_set("disable_functions", "exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source");
 
     // let's remove some nasty functions
+
     runkit_function_remove("exec");
     runkit_function_remove("shell_exec"); //also disable backtick operator `
     runkit_function_remove("passthru");
     runkit_function_remove("system");
+
+
+    // and rename the most critical ones
 
     runkit_function_rename('include','include_ori');
     runkit_function_rename('include_mod','include');
@@ -84,9 +93,6 @@ if ( ($config["enabled"]) && !isset($_COOKIE["phpig"]) ) {
     runkit_function_rename('touch','touch_ori');
     runkit_function_rename('touch_mod','touch');
 
-    runkit_function_rename('rename','rename_ori');
-    runkit_function_rename('rename_mod','rename');
-
     runkit_function_rename('copy','copy_ori');
     runkit_function_rename('copy_mod','copy');
 
@@ -104,6 +110,13 @@ if ( ($config["enabled"]) && !isset($_COOKIE["phpig"]) ) {
     error_log("PHPIG: disabled, " . $reason . " | SERVER: " . $pp_server . " | FILE: " . $_SERVER['PHP_SELF'] . " | IP: " . $_SERVER['REMOTE_ADDR']);
 }
 
+//error_log("unsetting cookie");
+
+// let's unset the cookie, so the next php code executed won't see the cookie and therefore be unable to steal it
+// original headers are in apache's hands
+
+unset($_COOKIE["phpig"]);
+
 $time_end = microtime(true);
 $time = $time_end - $time_start;
 
@@ -114,7 +127,11 @@ $time = $time_end - $time_start;
 /////////////////////////////////////////////////////////////////////////////
 
 function mysqli_query_mod($con, $query) { 
-    //die;
+//    if (strpos($query, "--")) {
+//        error_log("Detected probable SQL injection in query: " . $query);
+//    }
+
+//    error_log("query:" . $query);
 
     return mysqli_query_ori($con, $query);
     //return false;
@@ -138,7 +155,7 @@ function include_mod($file) {
 function unlink_mod($file, $context) {
 
 
-//    error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | NOTIFICATION: unlinking: " . $file);
+    error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | NOTIFICATION: unlinking: " . $file);
 
 //    //init
 //    $pp_violation = false;
@@ -168,13 +185,12 @@ function fopen_mod($file, $mod) {
 //    $out1 = `getattr`;
 //    error_log("testing getattr, output is=$out1");
 
-    if ($mod != "r") {
-        if (strpos($file, "/var/www/movisol.org/wp-includes")) {
-            restore_logs();
-            error_log("file:$file, written by: $backtrace[1]['file']");
-        }
-    }
-
+//    if ($mod != "r") {
+//        if (strpos($file, "/var/www/")) {
+//            restore_logs();
+//            error_log("file:$file, written by: $backtrace[1]['file']");
+//        }
+//    }
 
     global $config;
 
@@ -249,6 +265,7 @@ function file_put_contents_mod($file, $data, $flags, $content) {
         error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | FILE: " . $_SERVER['PHP_SELF'] .  " | IP: " . $_SERVER['REMOTE_ADDR'] . ": POLICY VIOLATION: trying to file_put_contents " . $extension . " file: " . $file);
         die;
     } else {
+//        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | FILE: " . $_SERVER['PHP_SELF'] .  " | IP: " . $_SERVER['REMOTE_ADDR'] . ": POLICY VIOLATION: trying to file_put_contents " . $extension . " file: " . $file);
         return file_put_contents_ori($file, $data, $flags, $content);
     }
 }
@@ -270,7 +287,7 @@ function touch_mod($file, $time, $atime) {
     if ($pp_violation) {
         // corrective action
         restore_logs();
-        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . ": POLICY VIOLATION: trying to touch with arbitrary time a .php file: " . $file);
+        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | FILE: " . $_SERVER['PHP_SELF'] .  " | IP: " . $_SERVER['REMOTE_ADDR'] . ": POLICY VIOLATION: trying to touch with arbitrary time a .php file: " . $file);
         die;
     } else {
         return touch_ori($file, $time, $atime);
@@ -294,7 +311,7 @@ function rename_mod($source, $dest, $context) {
     if ($pp_violation) {
         // corrective action
         restore_logs();
-        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . ": POLICY VIOLATION: trying to rename file using either source or dest with a .php filename: source: $source, dest: $dest");
+        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | FILE: " . $_SERVER['PHP_SELF'] .  " | IP: " . $_SERVER['REMOTE_ADDR'] . ": POLICY VIOLATION: trying to rename file using either source or dest with a .php filename: source: $source, dest: $dest");
         die;
     } else {
         return rename_ori($source, $dest, $context);
@@ -377,7 +394,7 @@ function endsWith($haystack, $needle, $case=true) {
 function restore_logs() {
     ini_set("error_reporting", 'E_ALL');
     ini_set("log_errors", 1);
-    ini_set("error_log", "/tmp/php-error.log");
+    ini_set("error_log", "/tmp/phpig.log");
 }
 
 function of() {
