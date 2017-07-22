@@ -1,5 +1,7 @@
 <?php
 
+//TODO: manage context... if it's missing on the outside call how to pass it to the internal one?
+
 $time_start = microtime(true);
 // log error to a specific file
 // need to implement logfile as a param
@@ -93,7 +95,7 @@ if ( ($config["enabled"]) && !isset($_COOKIE["phpig"]) ) {
     runkit_function_rename('touch','touch_ori');
     runkit_function_rename('touch_mod','touch');
 
-    runkit_function_rename('copy','copy_ori');
+    runkit_function_rename('copy', 'copy_ori');
     runkit_function_rename('copy_mod','copy');
 
     runkit_function_rename('move_uploaded_file','move_uploaded_file_ori');
@@ -318,7 +320,11 @@ function rename_mod($source, $dest, $context) {
     }
 }
 
+
 function copy_mod($source, $dest, $context) {
+
+//    error_log("copy_mod here.");
+
     //init
     $pp_violation = false;
 
@@ -335,9 +341,14 @@ function copy_mod($source, $dest, $context) {
     if ($pp_violation) {
         // corrective action
         restore_logs();
-        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . ": POLICY VIOLATION: trying to copy file using either source or dest with a .php filename: source: $source, dest: $dest");
+        error_log("phpig: SERVER: " . $_SERVER['SERVER_NAME'] . " | FILE: " . $_SERVER['PHP_SELF'] .  " | IP: " . $_SERVER['REMOTE_ADDR'] . ": POLICY VIOLATION: trying to copy file using either source or dest with a .php filename: source: $source, dest: $dest");
         die;
     } else {
+        error_log("source: $source");
+        error_log("dest: $dest");
+        error_log("context: $context");
+
+
         return copy_ori($source, $dest, $context);
     }
 }
